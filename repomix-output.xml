@@ -1,0 +1,2506 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+backend/
+  src/
+    auth/
+      decorators/
+        roles.decorator.ts
+      dto/
+        login.dto.ts
+        registro.dto.ts
+        update-perfil.dto.ts
+      guards/
+        auth.guard.ts
+        roles.guard.ts
+      auth.controller.ts
+      auth.module.ts
+      auth.service.ts
+      usuario-token.interface.ts
+    equipos/
+      dto/
+        create-equipo.dto.ts
+        update-equipo.dto.ts
+      entities/
+        equipo.entity.ts
+      equipos.controller.ts
+      equipos.module.ts
+      equipos.service.ts
+    inscripciones/
+      dto/
+        create-inscripcion.dto.ts
+        update-inscripcion.dto.ts
+      entities/
+        inscripcion.entity.ts
+      inscripciones.controller.ts
+      inscripciones.module.ts
+      inscripciones.service.ts
+    torneos/
+      dto/
+        create-torneo.dto.ts
+        update-torneo.dto.ts
+      entities/
+        torneo.entity.ts
+      torneos.controller.ts
+      torneos.module.ts
+      torneos.service.ts
+    usuarios/
+      entities/
+        usuario.entity.ts
+      usuarios.controller.ts
+      usuarios.module.ts
+      usuarios.service.ts
+    app.controller.spec.ts
+    app.controller.ts
+    app.module.ts
+    app.service.ts
+    main.ts
+  test/
+    app.e2e-spec.ts
+    jest-e2e.json
+  .env.example
+  .gitignore
+  .prettierrc
+  jest.config.ts
+  nest-cli.json
+  oxlint.json
+  package.json
+  README.md
+  tsconfig.build.json
+  tsconfig.json
+frontend/
+  .vscode/
+    extensions.json
+  public/
+    favicon.svg
+    icons.svg
+  src/
+    assets/
+      hero.png
+      vite.svg
+      vue.svg
+    components/
+      Navbar.vue
+    router/
+      index.js
+    services/
+      api.js
+      authService.js
+      equiposService.js
+      sesion.js
+      usuariosService.js
+    views/
+      EquipoCard.vue
+      EquipoDetalleView.vue
+      EquipoFormView.vue
+      EquiposView.vue
+      InicioView.vue
+      LoginView.vue
+      NotFoundView.vue
+      PerfilView.vue
+      RegistroView.vue
+    App.vue
+    main.js
+    style.css
+  .gitignore
+  index.html
+  package.json
+  README.md
+  vite.config.js
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="frontend/src/services/equiposService.js">
+import { peticion } from './api'
+
+export function obtenerEquipos() {
+  return peticion('/equipos')
+}
+
+export function obtenerEquipo(id) {
+  return peticion(`/equipos/${id}`)
+}
+
+export function crearEquipo(datos) {
+  return peticion('/equipos', { method: 'POST', body: JSON.stringify(datos) })
+}
+
+export function actualizarEquipo(id, datos) {
+  return peticion(`/equipos/${id}`, { method: 'PATCH', body: JSON.stringify(datos) })
+}
+
+export function eliminarEquipo(id) {
+  return peticion(`/equipos/${id}`, { method: 'DELETE' })
+}
+</file>
+
+<file path="frontend/src/views/EquipoCard.vue">
+<script setup>
+defineProps({
+  equipo: { type: Object, required: true },
+  puedeGestionar: { type: Boolean, default: false },
+})
+const emit = defineEmits(['eliminar'])
+</script>
+
+<template>
+  <article class="tarjeta">
+    <span class="etiqueta">{{ equipo.estado }}</span>
+    <h3>{{ equipo.nombre }}</h3>
+    <p>Juego preferido: {{ equipo.juegoPreferido }}</p>
+    <p>Capitán: {{ equipo.capitan.alias }}</p>
+    <p>Integrantes: {{ equipo.integrantes.length }}</p>
+    <div class="acciones">
+      <RouterLink :to="`/equipos/${equipo.id}`">Ver detalle</RouterLink>
+      <template v-if="puedeGestionar">
+        <RouterLink :to="`/equipos/${equipo.id}/editar`">Editar</RouterLink>
+        <button class="peligro" @click="emit('eliminar', equipo.id)">Eliminar</button>
+      </template>
+    </div>
+  </article>
+</template>
+</file>
+
+<file path="frontend/src/views/EquipoDetalleView.vue">
+<script setup>
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { eliminarEquipo, obtenerEquipo } from '../services/equiposService'
+import { esAdmin, usuario } from '../services/sesion'
+
+const route = useRoute()
+const router = useRouter()
+const equipo = ref(null)
+const cargando = ref(true)
+const error = ref('')
+
+const puedeGestionar = computed(() =>
+  equipo.value && (esAdmin.value || equipo.value.capitanId === usuario.value?.id)
+)
+
+async function cargar() {
+  try {
+    cargando.value = true
+    equipo.value = await obtenerEquipo(route.params.id)
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    cargando.value = false
+  }
+}
+
+async function borrar() {
+  if (!confirm(`¿Eliminar el equipo ${equipo.value.nombre}?`)) return
+  try {
+    await eliminarEquipo(equipo.value.id)
+    router.push('/equipos')
+  } catch (e) {
+    error.value = e.message
+  }
+}
+
+onMounted(cargar)
+</script>
+
+<template>
+  <section class="pagina">
+    <p v-if="cargando">Cargando equipo...</p>
+    <div v-else-if="error">
+      <h2>{{ error }}</h2>
+      <RouterLink to="/equipos">Volver a equipos</RouterLink>
+    </div>
+    <div v-else class="panel">
+      <span class="etiqueta">{{ equipo.estado }}</span>
+      <h1>{{ equipo.nombre }}</h1>
+      <p>Juego preferido: {{ equipo.juegoPreferido }}</p>
+      <h3>Integrantes</h3>
+      <ul>
+        <li v-for="integrante in equipo.integrantes" :key="integrante.id">
+          {{ integrante.nombre }} ({{ integrante.alias }})
+          <strong v-if="integrante.id === equipo.capitanId"> · Capitán</strong>
+        </li>
+      </ul>
+      <div class="acciones">
+        <template v-if="puedeGestionar">
+          <RouterLink :to="`/equipos/${equipo.id}/editar`">Editar</RouterLink>
+          <button class="peligro" @click="borrar">Eliminar</button>
+        </template>
+        <RouterLink to="/equipos">← Volver</RouterLink>
+      </div>
+    </div>
+  </section>
+</template>
+</file>
+
+<file path="frontend/src/views/EquipoFormView.vue">
+<script setup>
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { actualizarEquipo, crearEquipo, obtenerEquipo } from '../services/equiposService'
+import { obtenerUsuarios } from '../services/usuariosService'
+import { usuario } from '../services/sesion'
+
+const route = useRoute()
+const router = useRouter()
+const esEdicion = computed(() => Boolean(route.params.id))
+const equipo = ref({ nombre: '', juegoPreferido: '', estado: 'Activo', integrantesIds: [] })
+const capitanId = ref(usuario.value?.id)
+const usuarios = ref([])
+const cargando = ref(true)
+const guardando = ref(false)
+const error = ref('')
+const mensaje = ref('')
+
+const candidatos = computed(() => usuarios.value.filter(u => u.id !== capitanId.value))
+
+function validar() {
+  if (equipo.value.nombre.length < 3) return 'El nombre debe tener al menos 3 caracteres.'
+  if (!equipo.value.juegoPreferido) return 'Debe indicar el juego preferido.'
+  return ''
+}
+
+async function guardar() {
+  mensaje.value = ''
+  error.value = validar()
+  if (error.value) return
+  try {
+    guardando.value = true
+    if (esEdicion.value) {
+      await actualizarEquipo(route.params.id, equipo.value)
+    } else {
+      await crearEquipo(equipo.value)
+    }
+    mensaje.value = 'Equipo guardado correctamente.'
+    setTimeout(() => router.push('/equipos'), 1000)
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    guardando.value = false
+  }
+}
+
+onMounted(async () => {
+  try {
+    usuarios.value = await obtenerUsuarios()
+    if (esEdicion.value) {
+      const datos = await obtenerEquipo(route.params.id)
+      capitanId.value = datos.capitanId
+      equipo.value = {
+        nombre: datos.nombre,
+        juegoPreferido: datos.juegoPreferido,
+        estado: datos.estado,
+        integrantesIds: datos.integrantes.map(i => i.id).filter(id => id !== datos.capitanId),
+      }
+    }
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    cargando.value = false
+  }
+})
+</script>
+
+<template>
+  <section class="pagina">
+    <h1>{{ esEdicion ? 'Editar equipo' : 'Nuevo equipo' }}</h1>
+    <p v-if="cargando">Cargando...</p>
+    <form v-else class="formulario" @submit.prevent="guardar">
+      <label>Nombre del equipo</label>
+      <input v-model="equipo.nombre" />
+      <label>Juego preferido</label>
+      <input v-model="equipo.juegoPreferido" placeholder="Valorant, EA Sports FC..." />
+      <label>Estado</label>
+      <select v-model="equipo.estado">
+        <option>Activo</option>
+        <option>Inactivo</option>
+      </select>
+      <label>Integrantes (el capitán se agrega automáticamente)</label>
+      <div class="checks">
+        <label v-for="u in candidatos" :key="u.id">
+          <input v-model="equipo.integrantesIds" type="checkbox" :value="u.id" />
+          {{ u.nombre }} ({{ u.alias }})
+        </label>
+      </div>
+      <p v-if="error" class="error">{{ error }}</p>
+      <p v-if="mensaje" class="correcto">{{ mensaje }}</p>
+      <button :disabled="guardando">{{ guardando ? 'Guardando...' : 'Guardar equipo' }}</button>
+    </form>
+  </section>
+</template>
+</file>
+
+<file path="frontend/src/views/EquiposView.vue">
+<script setup>
+import { computed, onMounted, ref } from 'vue'
+import EquipoCard from '../components/EquipoCard.vue'
+import { eliminarEquipo, obtenerEquipos } from '../services/equiposService'
+import { esAdmin, usuario } from '../services/sesion'
+
+const equipos = ref([])
+const cargando = ref(true)
+const error = ref('')
+const mensaje = ref('')
+const busqueda = ref('')
+const juego = ref('Todos')
+
+const juegos = computed(() => ['Todos', ...new Set(equipos.value.map(e => e.juegoPreferido))])
+
+const equiposFiltrados = computed(() => {
+  const texto = busqueda.value.toLowerCase()
+  return equipos.value.filter(e =>
+    e.nombre.toLowerCase().includes(texto) &&
+    (juego.value === 'Todos' || e.juegoPreferido === juego.value)
+  )
+})
+
+function puedeGestionar(equipo) {
+  return esAdmin.value || equipo.capitanId === usuario.value?.id
+}
+
+async function cargar() {
+  try {
+    cargando.value = true
+    error.value = ''
+    equipos.value = await obtenerEquipos()
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    cargando.value = false
+  }
+}
+
+async function borrar(id) {
+  if (!confirm('¿Eliminar este equipo? También se eliminarán sus inscripciones y partidos.')) return
+  try {
+    await eliminarEquipo(id)
+    mensaje.value = 'Equipo eliminado correctamente.'
+    await cargar()
+  } catch (e) {
+    error.value = e.message
+  }
+}
+
+onMounted(cargar)
+</script>
+
+<template>
+  <section class="pagina">
+    <div class="encabezado">
+      <h1>Equipos</h1>
+      <RouterLink v-if="usuario" to="/equipos/nuevo" class="boton">Nuevo equipo</RouterLink>
+    </div>
+    <div class="filtros">
+      <input v-model="busqueda" placeholder="Buscar por nombre" />
+      <select v-model="juego">
+        <option v-for="j in juegos" :key="j">{{ j }}</option>
+      </select>
+    </div>
+    <p v-if="mensaje" class="correcto">{{ mensaje }}</p>
+    <p v-if="cargando">Cargando equipos...</p>
+    <div v-else-if="error">
+      <p class="error">{{ error }}</p>
+      <button @click="cargar">Reintentar</button>
+    </div>
+    <div v-else-if="equiposFiltrados.length" class="grid">
+      <EquipoCard
+        v-for="equipo in equiposFiltrados"
+        :key="equipo.id"
+        :equipo="equipo"
+        :puede-gestionar="puedeGestionar(equipo)"
+        @eliminar="borrar"
+      />
+    </div>
+    <p v-else>No existen equipos que coincidan con la búsqueda.</p>
+  </section>
+</template>
+</file>
+
+<file path="backend/src/auth/decorators/roles.decorator.ts">
+import { SetMetadata } from '@nestjs/common';
+
+export const ROLES_KEY = 'roles';
+export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
+</file>
+
+<file path="backend/src/auth/dto/login.dto.ts">
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+
+export class LoginDto {
+  @IsEmail()
+  correo: string;
+
+  @IsString()
+  @IsNotEmpty()
+  password: string;
+}
+</file>
+
+<file path="backend/src/auth/dto/registro.dto.ts">
+import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
+
+export class RegistroDto {
+  @IsString()
+  @MinLength(3)
+  nombre: string;
+
+  @IsString()
+  @MinLength(3)
+  @MaxLength(50)
+  alias: string;
+
+  @IsEmail()
+  correo: string;
+
+  @IsString()
+  @MinLength(6)
+  password: string;
+}
+</file>
+
+<file path="backend/src/auth/dto/update-perfil.dto.ts">
+import { PartialType, PickType } from '@nestjs/swagger';
+import { RegistroDto } from './registro.dto';
+
+export class UpdatePerfilDto extends PartialType(
+  PickType(RegistroDto, ['nombre', 'alias'] as const),
+) {}
+</file>
+
+<file path="backend/src/auth/guards/auth.guard.ts">
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+
+@Injectable()
+export class AuthGuard implements CanActivate {
+  constructor(private readonly jwtService: JwtService) {}
+
+  async canActivate(context: ExecutionContext) {
+    const request = context.switchToHttp().getRequest();
+    const [tipo, token] = request.headers.authorization?.split(' ') ?? [];
+    if (tipo !== 'Bearer' || !token) {
+      throw new UnauthorizedException('Debe iniciar sesión');
+    }
+    try {
+      request.user = await this.jwtService.verifyAsync(token);
+    } catch {
+      throw new UnauthorizedException('Token inválido o expirado');
+    }
+    return true;
+  }
+}
+</file>
+
+<file path="backend/src/auth/guards/roles.guard.ts">
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { ROLES_KEY } from '../decorators/roles.decorator';
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private readonly reflector: Reflector) {}
+
+  canActivate(context: ExecutionContext) {
+    const roles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (!roles) return true;
+    const { user } = context.switchToHttp().getRequest();
+    if (!roles.includes(user?.rol)) {
+      throw new ForbiddenException('No tiene permisos para esta acción');
+    }
+    return true;
+  }
+}
+</file>
+
+<file path="backend/src/auth/auth.controller.ts">
+import { Body, Controller, Get, HttpCode, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { AuthService } from './auth.service';
+import { RegistroDto } from './dto/registro.dto';
+import { LoginDto } from './dto/login.dto';
+import { UpdatePerfilDto } from './dto/update-perfil.dto';
+import { AuthGuard } from './guards/auth.guard';
+
+@ApiTags('auth')
+@Controller('auth')
+export class AuthController {
+  constructor(private readonly authService: AuthService) {}
+
+  @Post('registro')
+  registrar(@Body() dto: RegistroDto) {
+    return this.authService.registrar(dto);
+  }
+
+  @Post('login')
+  @HttpCode(200)
+  login(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @Get('perfil')
+  perfil(@Req() req: any) {
+    return this.authService.perfil(req.user.sub);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @Patch('perfil')
+  actualizarPerfil(@Req() req: any, @Body() dto: UpdatePerfilDto) {
+    return this.authService.actualizarPerfil(req.user.sub, dto);
+  }
+}
+</file>
+
+<file path="backend/src/auth/auth.module.ts">
+import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { UsuariosModule } from '../usuarios/usuarios.module';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+
+@Module({
+  imports: [
+    UsuariosModule,
+    JwtModule.registerAsync({
+      global: true,
+      useFactory: () => ({
+        secret: process.env.JWT_SECRET,
+        signOptions: { expiresIn: 60 * 60 * 8 },
+      }),
+    }),
+  ],
+  controllers: [AuthController],
+  providers: [AuthService],
+})
+export class AuthModule {}
+</file>
+
+<file path="backend/src/auth/auth.service.ts">
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcryptjs';
+import { UsuariosService } from '../usuarios/usuarios.service';
+import { RegistroDto } from './dto/registro.dto';
+import { LoginDto } from './dto/login.dto';
+import { UpdatePerfilDto } from './dto/update-perfil.dto';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private readonly usuariosService: UsuariosService,
+    private readonly jwtService: JwtService,
+  ) {}
+
+  async registrar(dto: RegistroDto) {
+    const hash = await bcrypt.hash(dto.password, 10);
+    return this.usuariosService.create({
+      ...dto,
+      password: hash,
+      rol: 'estudiante',
+    });
+  }
+
+  async login(dto: LoginDto) {
+    const usuario = await this.usuariosService.findByCorreoConPassword(dto.correo);
+    if (!usuario || !usuario.activo) {
+      throw new UnauthorizedException('Correo o contraseña incorrectos');
+    }
+    const valida = await bcrypt.compare(dto.password, usuario.password);
+    if (!valida) {
+      throw new UnauthorizedException('Correo o contraseña incorrectos');
+    }
+    const payload = { sub: usuario.id, correo: usuario.correo, rol: usuario.rol };
+    const { password, ...datosUsuario } = usuario;
+    return {
+      access_token: await this.jwtService.signAsync(payload),
+      usuario: datosUsuario,
+    };
+  }
+
+  perfil(id: number) {
+    return this.usuariosService.findOne(id);
+  }
+
+  actualizarPerfil(id: number, dto: UpdatePerfilDto) {
+    return this.usuariosService.update(id, dto);
+  }
+}
+</file>
+
+<file path="backend/src/auth/usuario-token.interface.ts">
+export interface UsuarioToken {
+  sub: number;
+  correo: string;
+  rol: string;
+}
+</file>
+
+<file path="backend/src/equipos/dto/create-equipo.dto.ts">
+import { IsArray, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+
+export class CreateEquipoDto {
+  @IsString()
+  @MinLength(3)
+  nombre: string;
+
+  @IsString()
+  @IsNotEmpty()
+  juegoPreferido: string;
+
+  @IsOptional()
+  @IsIn(['Activo', 'Inactivo'])
+  estado?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  integrantesIds?: number[];
+}
+</file>
+
+<file path="backend/src/equipos/dto/update-equipo.dto.ts">
+import { PartialType } from '@nestjs/swagger';
+import { CreateEquipoDto } from './create-equipo.dto';
+
+export class UpdateEquipoDto extends PartialType(CreateEquipoDto) {}
+</file>
+
+<file path="backend/src/equipos/entities/equipo.entity.ts">
+import { Column, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Usuario } from '../../usuarios/entities/usuario.entity';
+
+@Entity('equipos')
+export class Equipo {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({ length: 100, unique: true })
+  nombre: string;
+
+  @Column('int')
+  capitanId: number;
+
+  @ManyToOne(() => Usuario)
+  @JoinColumn({ name: 'capitanId' })
+  capitan: Usuario;
+
+  @Column({ length: 60 })
+  juegoPreferido: string;
+
+  @Column({ length: 20, default: 'Activo' })
+  estado: string;
+
+  @ManyToMany(() => Usuario)
+  @JoinTable({
+    name: 'equipo_integrantes',
+    joinColumn: { name: 'equipoId' },
+    inverseJoinColumn: { name: 'usuarioId' },
+  })
+  integrantes: Usuario[];
+}
+</file>
+
+<file path="backend/src/equipos/equipos.controller.ts">
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { EquiposService } from './equipos.service';
+import { CreateEquipoDto } from './dto/create-equipo.dto';
+import { UpdateEquipoDto } from './dto/update-equipo.dto';
+
+@ApiTags('equipos')
+@Controller('equipos')
+export class EquiposController {
+  constructor(private readonly equiposService: EquiposService) {}
+
+  @Get()
+  findAll() {
+    return this.equiposService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.equiposService.findOne(id);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @Post()
+  create(@Body() dto: CreateEquipoDto, @Req() req: any) {
+    return this.equiposService.create(dto, req.user);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @Patch(':id')
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateEquipoDto, @Req() req: any) {
+    return this.equiposService.update(id, dto, req.user);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @Delete(':id')
+  remove(@Param('id', ParseIntPipe) id: number, @Req() req: any) {
+    return this.equiposService.remove(id, req.user);
+  }
+}
+</file>
+
+<file path="backend/src/equipos/equipos.module.ts">
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Equipo } from './entities/equipo.entity';
+import { Usuario } from '../usuarios/entities/usuario.entity';
+import { EquiposController } from './equipos.controller';
+import { EquiposService } from './equipos.service';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([Equipo, Usuario])],
+  controllers: [EquiposController],
+  providers: [EquiposService],
+  exports: [EquiposService],
+})
+export class EquiposModule {}
+</file>
+
+<file path="backend/src/equipos/equipos.service.ts">
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { In, Repository } from 'typeorm';
+import { Equipo } from './entities/equipo.entity';
+import { Usuario } from '../usuarios/entities/usuario.entity';
+import { CreateEquipoDto } from './dto/create-equipo.dto';
+import { UpdateEquipoDto } from './dto/update-equipo.dto';
+import { UsuarioToken } from '../auth/usuario-token.interface';
+
+@Injectable()
+export class EquiposService {
+  constructor(
+    @InjectRepository(Equipo)
+    private readonly equiposRepo: Repository<Equipo>,
+    @InjectRepository(Usuario)
+    private readonly usuariosRepo: Repository<Usuario>,
+  ) {}
+
+  findAll() {
+    return this.equiposRepo.find({
+      relations: { capitan: true, integrantes: true },
+      order: { nombre: 'ASC' },
+    });
+  }
+
+  async findOne(id: number) {
+    const equipo = await this.equiposRepo.findOne({
+      where: { id },
+      relations: { capitan: true, integrantes: true },
+    });
+    if (!equipo) {
+      throw new NotFoundException('Equipo no encontrado');
+    }
+    return equipo;
+  }
+
+  async create(dto: CreateEquipoDto, usuario: UsuarioToken) {
+    await this.verificarNombre(dto.nombre);
+    const integrantes = await this.buscarIntegrantes(usuario.sub, dto.integrantesIds);
+    const equipo = this.equiposRepo.create({
+      nombre: dto.nombre,
+      juegoPreferido: dto.juegoPreferido,
+      estado: dto.estado ?? 'Activo',
+      capitanId: usuario.sub,
+      integrantes,
+    });
+    const guardado = await this.equiposRepo.save(equipo);
+    return this.findOne(guardado.id);
+  }
+
+  async update(id: number, dto: UpdateEquipoDto, usuario: UsuarioToken) {
+    const equipo = await this.findOne(id);
+    this.verificarPermiso(equipo, usuario);
+    if (dto.nombre && dto.nombre !== equipo.nombre) {
+      await this.verificarNombre(dto.nombre);
+    }
+    const { integrantesIds, ...datos } = dto;
+    Object.assign(equipo, datos);
+    if (integrantesIds) {
+      equipo.integrantes = await this.buscarIntegrantes(equipo.capitanId, integrantesIds);
+    }
+    await this.equiposRepo.save(equipo);
+    return this.findOne(id);
+  }
+
+  async remove(id: number, usuario: UsuarioToken) {
+    const equipo = await this.findOne(id);
+    this.verificarPermiso(equipo, usuario);
+    await this.equiposRepo.remove(equipo);
+    return {
+      mensaje: 'Equipo eliminado correctamente',
+      id,
+    };
+  }
+
+  private async verificarNombre(nombre: string) {
+    const existe = await this.equiposRepo.findOneBy({ nombre });
+    if (existe) {
+      throw new ConflictException('Ya existe un equipo con ese nombre');
+    }
+  }
+
+  private async buscarIntegrantes(capitanId: number, ids: number[] = []) {
+    const todos = [...new Set([capitanId, ...ids])];
+    const integrantes = await this.usuariosRepo.findBy({ id: In(todos) });
+    if (integrantes.length !== todos.length) {
+      throw new BadRequestException('Uno o más integrantes no existen');
+    }
+    return integrantes;
+  }
+
+  private verificarPermiso(equipo: Equipo, usuario: UsuarioToken) {
+    if (usuario.rol !== 'admin' && equipo.capitanId !== usuario.sub) {
+      throw new ForbiddenException('Solo el capitán o un administrador puede modificar este equipo');
+    }
+  }
+}
+</file>
+
+<file path="backend/src/inscripciones/dto/create-inscripcion.dto.ts">
+import { IsInt } from 'class-validator';
+
+export class CreateInscripcionDto {
+  @IsInt()
+  torneoId: number;
+
+  @IsInt()
+  equipoId: number;
+}
+</file>
+
+<file path="backend/src/inscripciones/dto/update-inscripcion.dto.ts">
+import { IsIn } from 'class-validator';
+
+export class UpdateInscripcionDto {
+  @IsIn(['Pendiente', 'Aceptada', 'Rechazada'])
+  estado: string;
+}
+</file>
+
+<file path="backend/src/inscripciones/entities/inscripcion.entity.ts">
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import { Torneo } from '../../torneos/entities/torneo.entity';
+import { Equipo } from '../../equipos/entities/equipo.entity';
+
+@Entity('inscripciones')
+@Unique(['torneoId', 'equipoId'])
+export class Inscripcion {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column('int')
+  torneoId: number;
+
+  @ManyToOne(() => Torneo, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'torneoId' })
+  torneo: Torneo;
+
+  @Column('int')
+  equipoId: number;
+
+  @ManyToOne(() => Equipo, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'equipoId' })
+  equipo: Equipo;
+
+  @CreateDateColumn()
+  fecha: Date;
+
+  @Column({ length: 20, default: 'Pendiente' })
+  estado: string;
+}
+</file>
+
+<file path="backend/src/inscripciones/inscripciones.controller.ts">
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { InscripcionesService } from './inscripciones.service';
+import { CreateInscripcionDto } from './dto/create-inscripcion.dto';
+import { UpdateInscripcionDto } from './dto/update-inscripcion.dto';
+
+@ApiTags('inscripciones')
+@Controller('inscripciones')
+export class InscripcionesController {
+  constructor(private readonly inscripcionesService: InscripcionesService) {}
+
+  @ApiQuery({ name: 'torneoId', required: false })
+  @Get()
+  findAll(@Query('torneoId') torneoId?: string) {
+    return this.inscripcionesService.findAll(torneoId ? Number(torneoId) : undefined);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard)
+  @Post()
+  create(@Body() dto: CreateInscripcionDto, @Req() req: any) {
+    return this.inscripcionesService.create(dto, req.user);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('admin')
+  @Patch(':id')
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateInscripcionDto) {
+    return this.inscripcionesService.update(id, dto);
+  }
+}
+</file>
+
+<file path="backend/src/inscripciones/inscripciones.module.ts">
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Inscripcion } from './entities/inscripcion.entity';
+import { InscripcionesController } from './inscripciones.controller';
+import { InscripcionesService } from './inscripciones.service';
+import { TorneosModule } from '../torneos/torneos.module';
+import { EquiposModule } from '../equipos/equipos.module';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([Inscripcion]), TorneosModule, EquiposModule],
+  controllers: [InscripcionesController],
+  providers: [InscripcionesService],
+})
+export class InscripcionesModule {}
+</file>
+
+<file path="backend/src/inscripciones/inscripciones.service.ts">
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Not, Repository } from 'typeorm';
+import { Inscripcion } from './entities/inscripcion.entity';
+import { CreateInscripcionDto } from './dto/create-inscripcion.dto';
+import { UpdateInscripcionDto } from './dto/update-inscripcion.dto';
+import { TorneosService } from '../torneos/torneos.service';
+import { EquiposService } from '../equipos/equipos.service';
+import { UsuarioToken } from '../auth/usuario-token.interface';
+
+export function fechaHoy() {
+  const hoy = new Date();
+  const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+  const dia = String(hoy.getDate()).padStart(2, '0');
+  return `${hoy.getFullYear()}-${mes}-${dia}`;
+}
+
+@Injectable()
+export class InscripcionesService {
+  constructor(
+    @InjectRepository(Inscripcion)
+    private readonly inscripcionesRepo: Repository<Inscripcion>,
+    private readonly torneosService: TorneosService,
+    private readonly equiposService: EquiposService,
+  ) {}
+
+  findAll(torneoId?: number) {
+    return this.inscripcionesRepo.find({
+      where: torneoId ? { torneoId } : {},
+      relations: { torneo: true, equipo: true },
+      order: { fecha: 'DESC' },
+    });
+  }
+
+  async findOne(id: number) {
+    const inscripcion = await this.inscripcionesRepo.findOne({
+      where: { id },
+      relations: { torneo: true, equipo: true },
+    });
+    if (!inscripcion) {
+      throw new NotFoundException('Inscripción no encontrada');
+    }
+    return inscripcion;
+  }
+
+  async create(dto: CreateInscripcionDto, usuario: UsuarioToken) {
+    const torneo = await this.torneosService.findOne(dto.torneoId);
+    const equipo = await this.equiposService.findOne(dto.equipoId);
+
+    if (usuario.rol !== 'admin' && equipo.capitanId !== usuario.sub) {
+      throw new ForbiddenException('Solo el capitán del equipo puede inscribirlo');
+    }
+    if (torneo.estado !== 'Abierto' || fechaHoy() > torneo.cierreInscripcion) {
+      throw new BadRequestException('El período de inscripción de este torneo está cerrado');
+    }
+    const duplicada = await this.inscripcionesRepo.findOneBy({
+      torneoId: dto.torneoId,
+      equipoId: dto.equipoId,
+    });
+    if (duplicada) {
+      throw new ConflictException('El equipo ya está inscrito en este torneo');
+    }
+    await this.verificarCupo(dto.torneoId, torneo.cupoMaximo);
+
+    const inscripcion = this.inscripcionesRepo.create({
+      torneoId: dto.torneoId,
+      equipoId: dto.equipoId,
+      estado: 'Pendiente',
+    });
+    const guardada = await this.inscripcionesRepo.save(inscripcion);
+    return this.findOne(guardada.id);
+  }
+
+  async update(id: number, dto: UpdateInscripcionDto) {
+    const inscripcion = await this.findOne(id);
+    if (inscripcion.estado === 'Rechazada' && dto.estado !== 'Rechazada') {
+      await this.verificarCupo(inscripcion.torneoId, inscripcion.torneo.cupoMaximo);
+    }
+    await this.inscripcionesRepo.update(id, { estado: dto.estado });
+    return this.findOne(id);
+  }
+
+  private async verificarCupo(torneoId: number, cupoMaximo: number) {
+    const ocupados = await this.inscripcionesRepo.count({
+      where: { torneoId, estado: Not('Rechazada') },
+    });
+    if (ocupados >= cupoMaximo) {
+      throw new BadRequestException('El torneo alcanzó su cupo máximo de equipos');
+    }
+  }
+}
+</file>
+
+<file path="backend/src/torneos/dto/create-torneo.dto.ts">
+import { IsDateString, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Min, MinLength } from 'class-validator';
+
+export const MODALIDADES = ['Liga', 'Eliminación directa'];
+export const ESTADOS_TORNEO = ['Abierto', 'En curso', 'Finalizado'];
+
+export class CreateTorneoDto {
+  @IsString()
+  @MinLength(3)
+  nombre: string;
+
+  @IsString()
+  @IsNotEmpty()
+  videojuego: string;
+
+  @IsIn(MODALIDADES)
+  modalidad: string;
+
+  @IsDateString()
+  fechaInicio: string;
+
+  @IsDateString()
+  cierreInscripcion: string;
+
+  @IsInt()
+  @Min(2)
+  cupoMaximo: number;
+
+  @IsOptional()
+  @IsIn(ESTADOS_TORNEO)
+  estado?: string;
+}
+</file>
+
+<file path="backend/src/torneos/dto/update-torneo.dto.ts">
+import { PartialType } from '@nestjs/swagger';
+import { CreateTorneoDto } from './create-torneo.dto';
+
+export class UpdateTorneoDto extends PartialType(CreateTorneoDto) {}
+</file>
+
+<file path="backend/src/torneos/entities/torneo.entity.ts">
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+
+@Entity('torneos')
+export class Torneo {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({ length: 100 })
+  nombre: string;
+
+  @Column({ length: 60 })
+  videojuego: string;
+
+  @Column({ length: 30 })
+  modalidad: string;
+
+  @Column({ type: 'date' })
+  fechaInicio: string;
+
+  @Column({ type: 'date' })
+  cierreInscripcion: string;
+
+  @Column('int')
+  cupoMaximo: number;
+
+  @Column({ length: 20, default: 'Abierto' })
+  estado: string;
+}
+</file>
+
+<file path="backend/src/torneos/torneos.controller.ts">
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { TorneosService } from './torneos.service';
+import { CreateTorneoDto } from './dto/create-torneo.dto';
+import { UpdateTorneoDto } from './dto/update-torneo.dto';
+
+@ApiTags('torneos')
+@Controller('torneos')
+export class TorneosController {
+  constructor(private readonly torneosService: TorneosService) {}
+
+  @Get()
+  findAll() {
+    return this.torneosService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.torneosService.findOne(id);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('admin')
+  @Post()
+  create(@Body() dto: CreateTorneoDto) {
+    return this.torneosService.create(dto);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('admin')
+  @Patch(':id')
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateTorneoDto) {
+    return this.torneosService.update(id, dto);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('admin')
+  @Delete(':id')
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.torneosService.remove(id);
+  }
+}
+</file>
+
+<file path="backend/src/torneos/torneos.module.ts">
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Torneo } from './entities/torneo.entity';
+import { TorneosController } from './torneos.controller';
+import { TorneosService } from './torneos.service';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([Torneo])],
+  controllers: [TorneosController],
+  providers: [TorneosService],
+  exports: [TorneosService],
+})
+export class TorneosModule {}
+</file>
+
+<file path="backend/src/torneos/torneos.service.ts">
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Torneo } from './entities/torneo.entity';
+import { CreateTorneoDto } from './dto/create-torneo.dto';
+import { UpdateTorneoDto } from './dto/update-torneo.dto';
+
+@Injectable()
+export class TorneosService {
+  constructor(
+    @InjectRepository(Torneo)
+    private readonly torneosRepo: Repository<Torneo>,
+  ) {}
+
+  findAll() {
+    return this.torneosRepo.find({
+      order: { fechaInicio: 'DESC' },
+    });
+  }
+
+  async findOne(id: number) {
+    const torneo = await this.torneosRepo.findOneBy({ id });
+    if (!torneo) {
+      throw new NotFoundException('Torneo no encontrado');
+    }
+    return torneo;
+  }
+
+  async create(dto: CreateTorneoDto) {
+    this.validarFechas(dto.cierreInscripcion, dto.fechaInicio);
+    const torneo = this.torneosRepo.create(dto);
+    return this.torneosRepo.save(torneo);
+  }
+
+  async update(id: number, dto: UpdateTorneoDto) {
+    const torneo = await this.findOne(id);
+    Object.assign(torneo, dto);
+    this.validarFechas(torneo.cierreInscripcion, torneo.fechaInicio);
+    return this.torneosRepo.save(torneo);
+  }
+
+  async remove(id: number) {
+    const torneo = await this.findOne(id);
+    await this.torneosRepo.remove(torneo);
+    return {
+      mensaje: 'Torneo eliminado correctamente',
+      id,
+    };
+  }
+
+  private validarFechas(cierre: string, inicio: string) {
+    if (new Date(cierre) > new Date(inicio)) {
+      throw new BadRequestException(
+        'El cierre de inscripción no puede ser posterior a la fecha de inicio',
+      );
+    }
+  }
+}
+</file>
+
+<file path="backend/src/usuarios/entities/usuario.entity.ts">
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+
+@Entity('usuarios')
+export class Usuario {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({ length: 100 })
+  nombre: string;
+
+  @Column({ length: 50, unique: true })
+  alias: string;
+
+  @Column({ length: 100, unique: true })
+  correo: string;
+
+  @Column({ length: 255, select: false })
+  password: string;
+
+  @Column({ length: 20, default: 'estudiante' })
+  rol: string;
+
+  @Column({ default: true })
+  activo: boolean;
+}
+</file>
+
+<file path="backend/src/usuarios/usuarios.controller.ts">
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { AuthGuard } from '../auth/guards/auth.guard';
+import { UsuariosService } from './usuarios.service';
+
+@ApiTags('usuarios')
+@ApiBearerAuth()
+@UseGuards(AuthGuard)
+@Controller('usuarios')
+export class UsuariosController {
+  constructor(private readonly usuariosService: UsuariosService) {}
+
+  @Get()
+  findAll() {
+    return this.usuariosService.findAll();
+  }
+}
+</file>
+
+<file path="backend/src/usuarios/usuarios.module.ts">
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Usuario } from './entities/usuario.entity';
+import { UsuariosController } from './usuarios.controller';
+import { UsuariosService } from './usuarios.service';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([Usuario])],
+  controllers: [UsuariosController],
+  providers: [UsuariosService],
+  exports: [UsuariosService],
+})
+export class UsuariosModule {}
+</file>
+
+<file path="backend/src/usuarios/usuarios.service.ts">
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Usuario } from './entities/usuario.entity';
+
+@Injectable()
+export class UsuariosService {
+  constructor(
+    @InjectRepository(Usuario)
+    private readonly usuariosRepo: Repository<Usuario>,
+  ) {}
+
+  findAll() {
+    return this.usuariosRepo.find({
+      order: { nombre: 'ASC' },
+    });
+  }
+
+  async findOne(id: number) {
+    const usuario = await this.usuariosRepo.findOneBy({ id });
+    if (!usuario) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    return usuario;
+  }
+
+  findByCorreoConPassword(correo: string) {
+    return this.usuariosRepo.findOne({
+      where: { correo },
+      select: {
+        id: true,
+        nombre: true,
+        alias: true,
+        correo: true,
+        password: true,
+        rol: true,
+        activo: true,
+      },
+    });
+  }
+
+  async create(datos: {
+    nombre: string;
+    alias: string;
+    correo: string;
+    password: string;
+    rol: string;
+  }) {
+    const existe = await this.usuariosRepo.findOne({
+      where: [{ correo: datos.correo }, { alias: datos.alias }],
+    });
+    if (existe) {
+      throw new ConflictException('El correo o alias ya está registrado');
+    }
+    const usuario = this.usuariosRepo.create(datos);
+    const guardado = await this.usuariosRepo.save(usuario);
+    return this.findOne(guardado.id);
+  }
+
+  async update(id: number, datos: Partial<Usuario>) {
+    const usuario = await this.findOne(id);
+    if (datos.alias && datos.alias !== usuario.alias) {
+      const ocupado = await this.usuariosRepo.findOneBy({ alias: datos.alias });
+      if (ocupado) {
+        throw new ConflictException('El alias ya está en uso');
+      }
+    }
+    Object.assign(usuario, datos);
+    await this.usuariosRepo.save(usuario);
+    return this.findOne(id);
+  }
+}
+</file>
+
+<file path="backend/src/app.controller.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+
+describe('AppController', () => {
+  let appController: AppController;
+
+  beforeEach(async () => {
+    const app: TestingModule = await Test.createTestingModule({
+      controllers: [AppController],
+      providers: [AppService],
+    }).compile();
+
+    appController = app.get<AppController>(AppController);
+  });
+
+  describe('root', () => {
+    it('should return "Hello World!"', () => {
+      expect(appController.getHello()).toBe('Hello World!');
+    });
+  });
+});
+</file>
+
+<file path="backend/src/app.controller.ts">
+import { Controller, Get } from '@nestjs/common';
+import { AppService } from './app.service';
+
+@Controller()
+export class AppController {
+  constructor(private readonly appService: AppService) {}
+
+  @Get()
+  getHello(): string {
+    return this.appService.getHello();
+  }
+}
+</file>
+
+<file path="backend/src/app.service.ts">
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class AppService {
+  getHello(): string {
+    return 'Hello World!';
+  }
+}
+</file>
+
+<file path="backend/test/app.e2e-spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
+import { App } from 'supertest/types';
+import { AppModule } from './../src/app.module';
+
+describe('AppController (e2e)', () => {
+  let app: INestApplication<App>;
+
+  beforeEach(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    await app.init();
+  });
+
+  it('/ (GET)', () => {
+    return request(app.getHttpServer())
+      .get('/')
+      .expect(200)
+      .expect('Hello World!');
+  });
+
+  afterEach(async () => {
+    await app.close();
+  });
+});
+</file>
+
+<file path="backend/test/jest-e2e.json">
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  }
+}
+</file>
+
+<file path="backend/.env.example">
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=gamehub_db
+PORT=3000
+JWT_SECRET=
+</file>
+
+<file path="backend/.prettierrc">
+{
+  "singleQuote": true,
+  "trailingComma": "all"
+}
+</file>
+
+<file path="backend/jest.config.ts">
+import type { Config } from 'jest';
+import { pathsToModuleNameMapper } from 'ts-jest';
+import ts from 'typescript';
+
+// Path aliases (e.g. the ones added by `nest g library`) live in tsconfig.json,
+// so they are read from there instead of being duplicated here.
+const { config: tsconfig } = ts.readConfigFile(
+  './tsconfig.json',
+  ts.sys.readFile,
+);
+const paths = tsconfig?.compilerOptions?.paths ?? {};
+
+const config: Config = {
+  moduleFileExtensions: ['js', 'json', 'ts'],
+  rootDir: '.',
+  testRegex: '.*\\.spec\\.ts$',
+  transform: {
+    '^.+\\.(t|j)s$': 'ts-jest',
+  },
+  moduleNameMapper: pathsToModuleNameMapper(paths, { prefix: '<rootDir>/' }),
+  collectCoverageFrom: [
+    'src/**/*.(t|j)s',
+    'libs/**/*.(t|j)s',
+    'apps/**/*.(t|j)s',
+  ],
+  coverageDirectory: './coverage',
+  testEnvironment: 'node',
+};
+
+export default config;
+</file>
+
+<file path="backend/oxlint.json">
+{
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/crates/oxc_linter/src/rules.rs",
+  "rules": {
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-floating-promises": "warn"
+  },
+  "env": {
+    "node": true
+  }
+}
+</file>
+
+<file path="backend/README.md">
+<p align="center">
+  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+</p>
+
+[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
+[circleci-url]: https://circleci.com/gh/nestjs/nest
+
+  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
+    <p align="center">
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
+<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
+<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
+<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
+<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
+  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
+    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
+  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+</p>
+  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
+  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+
+## Description
+
+[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+
+## Project setup
+
+```bash
+$ npm install
+```
+
+## Compile and run the project
+
+```bash
+# development
+$ npm run start
+
+# watch mode
+$ npm run start:dev
+
+# production mode
+$ npm run start:prod
+```
+
+## Run tests
+
+```bash
+# unit tests
+$ npm run test
+
+# e2e tests
+$ npm run test:e2e
+
+# test coverage
+$ npm run test:cov
+```
+
+## Deployment
+
+When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+
+If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+
+```bash
+$ npm install -g @nestjs/mau
+$ mau deploy
+```
+
+With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+
+## Observability
+
+In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+
+[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+
+- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
+- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
+- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
+- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
+- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
+- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
+- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
+- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+
+## Resources
+
+Check out a few resources that may come in handy when working with NestJS:
+
+- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
+- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
+- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
+- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
+- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
+- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
+- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
+- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
+- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+
+## Support
+
+Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+
+## Stay in touch
+
+- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
+- Website - [https://nestjs.com](https://nestjs.com/)
+- Twitter - [@nestframework](https://twitter.com/nestframework)
+
+## License
+
+Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+</file>
+
+<file path="backend/tsconfig.build.json">
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "./src"
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+}
+</file>
+
+<file path="backend/tsconfig.json">
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolvePackageJsonExports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2023",
+    "types": ["node", "jest"],
+    "sourceMap": true,
+    "outDir": "./dist",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "strictPropertyInitialization": false
+  }
+}
+</file>
+
+<file path="frontend/.vscode/extensions.json">
+{
+  "recommendations": ["Vue.volar"]
+}
+</file>
+
+<file path="frontend/public/favicon.svg">
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="46" fill="none" viewBox="0 0 48 46"><path fill="#863bff" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" style="fill:#863bff;fill:color(display-p3 .5252 .23 1);fill-opacity:1"/><mask id="a" width="48" height="46" x="0" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path fill="#000" d="M25.842 44.938c-.664.844-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.183c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.498 0-3.579-1.842-3.579H1.133c-.92 0-1.456-1.04-.92-1.787L9.91.473c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.578 1.842 3.578h11.377c.943 0 1.473 1.088.89 1.832L25.843 44.94z" style="fill:#000;fill-opacity:1"/></mask><g mask="url(#a)"><g filter="url(#b)"><ellipse cx="5.508" cy="14.704" fill="#ede6ff" rx="5.508" ry="14.704" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -4.47 31.516)"/></g><g filter="url(#c)"><ellipse cx="10.399" cy="29.851" fill="#ede6ff" rx="10.399" ry="29.851" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -39.328 7.883)"/></g><g filter="url(#d)"><ellipse cx="5.508" cy="30.487" fill="#7e14ff" rx="5.508" ry="30.487" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -25.913 -14.639)scale(1 -1)"/></g><g filter="url(#e)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -32.644 -3.334)scale(1 -1)"/></g><g filter="url(#f)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -34.34 30.47)"/></g><g filter="url(#g)"><ellipse cx="14.072" cy="22.078" fill="#ede6ff" rx="14.072" ry="22.078" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="rotate(93.35 24.506 48.493)scale(-1 1)"/></g><g filter="url(#h)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#i)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#j)"><ellipse cx=".387" cy="8.972" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(39.51 .387 8.972)"/></g><g filter="url(#k)"><ellipse cx="47.523" cy="-6.092" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 47.523 -6.092)"/></g><g filter="url(#l)"><ellipse cx="41.412" cy="6.333" fill="#47bfff" rx="5.971" ry="9.665" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 41.412 6.333)"/></g><g filter="url(#m)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#n)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#o)"><ellipse cx="35.651" cy="29.907" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 35.651 29.907)"/></g><g filter="url(#p)"><ellipse cx="38.418" cy="32.4" fill="#47bfff" rx="5.971" ry="15.297" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 38.418 32.4)"/></g></g><defs><filter id="b" width="60.045" height="41.654" x="-19.77" y="16.149" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="c" width="90.34" height="51.437" x="-54.613" y="-7.533" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="d" width="79.355" height="29.4" x="-49.64" y="2.03" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="e" width="79.579" height="29.4" x="-45.045" y="20.029" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="f" width="79.579" height="29.4" x="-43.513" y="21.178" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="g" width="74.749" height="58.852" x="15.756" y="-17.901" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="h" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="i" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="j" width="56.045" height="63.649" x="-27.636" y="-22.853" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="k" width="54.814" height="64.646" x="20.116" y="-38.415" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="l" width="33.541" height="35.313" x="24.641" y="-11.323" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="m" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="n" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="o" width="54.814" height="64.646" x="8.244" y="-2.416" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="p" width="39.409" height="43.623" x="18.713" y="10.588" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter></defs></svg>
+</file>
+
+<file path="frontend/public/icons.svg">
+<svg xmlns="http://www.w3.org/2000/svg">
+  <symbol id="bluesky-icon" viewBox="0 0 16 17">
+    <g clip-path="url(#bluesky-clip)"><path fill="#08060d" d="M7.75 7.735c-.693-1.348-2.58-3.86-4.334-5.097-1.68-1.187-2.32-.981-2.74-.79C.188 2.065.1 2.812.1 3.251s.241 3.602.398 4.13c.52 1.744 2.367 2.333 4.07 2.145-2.495.37-4.71 1.278-1.805 4.512 3.196 3.309 4.38-.71 4.987-2.746.608 2.036 1.307 5.91 4.93 2.746 2.72-2.746.747-4.143-1.747-4.512 1.702.189 3.55-.4 4.07-2.145.156-.528.397-3.691.397-4.13s-.088-1.186-.575-1.406c-.42-.19-1.06-.395-2.741.79-1.755 1.24-3.64 3.752-4.334 5.099"/></g>
+    <defs><clipPath id="bluesky-clip"><path fill="#fff" d="M.1.85h15.3v15.3H.1z"/></clipPath></defs>
+  </symbol>
+  <symbol id="discord-icon" viewBox="0 0 20 19">
+    <path fill="#08060d" d="M16.224 3.768a14.5 14.5 0 0 0-3.67-1.153c-.158.286-.343.67-.47.976a13.5 13.5 0 0 0-4.067 0c-.128-.306-.317-.69-.476-.976A14.4 14.4 0 0 0 3.868 3.77C1.546 7.28.916 10.703 1.231 14.077a14.7 14.7 0 0 0 4.5 2.306q.545-.748.965-1.587a9.5 9.5 0 0 1-1.518-.74q.191-.14.372-.293c2.927 1.369 6.107 1.369 8.999 0q.183.152.372.294-.723.437-1.52.74.418.838.963 1.588a14.6 14.6 0 0 0 4.504-2.308c.37-3.911-.63-7.302-2.644-10.309m-9.13 8.234c-.878 0-1.599-.82-1.599-1.82 0-.998.705-1.82 1.6-1.82.894 0 1.614.82 1.599 1.82.001 1-.705 1.82-1.6 1.82m5.91 0c-.878 0-1.599-.82-1.599-1.82 0-.998.705-1.82 1.6-1.82.893 0 1.614.82 1.599 1.82 0 1-.706 1.82-1.6 1.82"/>
+  </symbol>
+  <symbol id="documentation-icon" viewBox="0 0 21 20">
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="m15.5 13.333 1.533 1.322c.645.555.967.833.967 1.178s-.322.623-.967 1.179L15.5 18.333m-3.333-5-1.534 1.322c-.644.555-.966.833-.966 1.178s.322.623.966 1.179l1.534 1.321"/>
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M17.167 10.836v-4.32c0-1.41 0-2.117-.224-2.68-.359-.906-1.118-1.621-2.08-1.96-.599-.21-1.349-.21-2.848-.21-2.623 0-3.935 0-4.983.369-1.684.591-3.013 1.842-3.641 3.428C3 6.449 3 7.684 3 10.154v2.122c0 2.558 0 3.838.706 4.726q.306.383.713.671c.76.536 1.79.64 3.581.66"/>
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M3 10a2.78 2.78 0 0 1 2.778-2.778c.555 0 1.209.097 1.748-.047.48-.129.854-.503.982-.982.145-.54.048-1.194.048-1.749a2.78 2.78 0 0 1 2.777-2.777"/>
+  </symbol>
+  <symbol id="github-icon" viewBox="0 0 19 19">
+    <path fill="#08060d" fill-rule="evenodd" d="M9.356 1.85C5.05 1.85 1.57 5.356 1.57 9.694a7.84 7.84 0 0 0 5.324 7.44c.387.079.528-.168.528-.376 0-.182-.013-.805-.013-1.454-2.165.467-2.616-.935-2.616-.935-.349-.91-.864-1.143-.864-1.143-.71-.48.051-.48.051-.48.787.051 1.2.805 1.2.805.695 1.194 1.817.857 2.268.649.064-.507.27-.857.49-1.052-1.728-.182-3.545-.857-3.545-3.87 0-.857.31-1.558.8-2.104-.078-.195-.349-1 .077-2.078 0 0 .657-.208 2.14.805a7.5 7.5 0 0 1 1.946-.26c.657 0 1.328.092 1.946.26 1.483-1.013 2.14-.805 2.14-.805.426 1.078.155 1.883.078 2.078.502.546.799 1.247.799 2.104 0 3.013-1.818 3.675-3.558 3.87.284.247.528.714.528 1.454 0 1.052-.012 1.896-.012 2.156 0 .208.142.455.528.377a7.84 7.84 0 0 0 5.324-7.441c.013-4.338-3.48-7.844-7.773-7.844" clip-rule="evenodd"/>
+  </symbol>
+  <symbol id="social-icon" viewBox="0 0 20 20">
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M12.5 6.667a4.167 4.167 0 1 0-8.334 0 4.167 4.167 0 0 0 8.334 0"/>
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M2.5 16.667a5.833 5.833 0 0 1 8.75-5.053m3.837.474.513 1.035c.07.144.257.282.414.309l.93.155c.596.1.736.536.307.965l-.723.73a.64.64 0 0 0-.152.531l.207.903c.164.715-.213.991-.84.618l-.872-.52a.63.63 0 0 0-.577 0l-.872.52c-.624.373-1.003.094-.84-.618l.207-.903a.64.64 0 0 0-.152-.532l-.723-.729c-.426-.43-.289-.864.306-.964l.93-.156a.64.64 0 0 0 .412-.31l.513-1.034c.28-.562.735-.562 1.012 0"/>
+  </symbol>
+  <symbol id="x-icon" viewBox="0 0 19 19">
+    <path fill="#08060d" fill-rule="evenodd" d="M1.893 1.98c.052.072 1.245 1.769 2.653 3.77l2.892 4.114c.183.261.333.48.333.486s-.068.089-.152.183l-.522.593-.765.867-3.597 4.087c-.375.426-.734.834-.798.905a1 1 0 0 0-.118.148c0 .01.236.017.664.017h.663l.729-.83c.4-.457.796-.906.879-.999a692 692 0 0 0 1.794-2.038c.034-.037.301-.34.594-.675l.551-.624.345-.392a7 7 0 0 1 .34-.374c.006 0 .93 1.306 2.052 2.903l2.084 2.965.045.063h2.275c1.87 0 2.273-.003 2.266-.021-.008-.02-1.098-1.572-3.894-5.547-2.013-2.862-2.28-3.246-2.273-3.266.008-.019.282-.332 2.085-2.38l2-2.274 1.567-1.782c.022-.028-.016-.03-.65-.03h-.674l-.3.342a871 871 0 0 1-1.782 2.025c-.067.075-.405.458-.75.852a100 100 0 0 1-.803.91c-.148.172-.299.344-.99 1.127-.304.343-.32.358-.345.327-.015-.019-.904-1.282-1.976-2.808L6.365 1.85H1.8zm1.782.91 8.078 11.294c.772 1.08 1.413 1.973 1.425 1.984.016.017.241.02 1.05.017l1.03-.004-2.694-3.766L7.796 5.75 5.722 2.852l-1.039-.004-1.039-.004z" clip-rule="evenodd"/>
+  </symbol>
+</svg>
+</file>
+
+<file path="frontend/src/assets/vite.svg">
+<svg xmlns="http://www.w3.org/2000/svg" width="77" height="47" fill="none" aria-labelledby="vite-logo-title" viewBox="0 0 77 47"><title id="vite-logo-title">Vite</title><style>.parenthesis{fill:#000}@media (prefers-color-scheme:dark){.parenthesis{fill:#fff}}</style><path fill="#9135ff" d="M40.151 45.71c-.663.844-2.02.374-2.02-.699V34.708a2.26 2.26 0 0 0-2.262-2.262H24.493c-.92 0-1.457-1.04-.92-1.788l7.479-10.471c1.07-1.498 0-3.578-1.842-3.578H15.443c-.92 0-1.456-1.04-.92-1.788l9.696-13.576c.213-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.472c-1.07 1.497 0 3.578 1.842 3.578h11.376c.944 0 1.474 1.087.89 1.83L40.153 45.712z"/><mask id="a" width="48" height="47" x="14" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path fill="#000" d="M40.047 45.71c-.663.843-2.02.374-2.02-.699V34.708a2.26 2.26 0 0 0-2.262-2.262H24.389c-.92 0-1.457-1.04-.92-1.788l7.479-10.472c1.07-1.497 0-3.578-1.842-3.578H15.34c-.92 0-1.456-1.04-.92-1.788l9.696-13.575c.213-.297.556-.474.92-.474H53.93c.92 0 1.456 1.04.92 1.788L47.37 13.03c-1.07 1.498 0 3.578 1.842 3.578h11.376c.944 0 1.474 1.088.89 1.831L40.049 45.712z"/></mask><g mask="url(#a)"><g filter="url(#b)"><ellipse cx="5.508" cy="14.704" fill="#eee6ff" rx="5.508" ry="14.704" transform="rotate(269.814 20.96 11.29)scale(-1 1)"/></g><g filter="url(#c)"><ellipse cx="10.399" cy="29.851" fill="#eee6ff" rx="10.399" ry="29.851" transform="rotate(89.814 -16.902 -8.275)scale(1 -1)"/></g><g filter="url(#d)"><ellipse cx="5.508" cy="30.487" fill="#8900ff" rx="5.508" ry="30.487" transform="rotate(89.814 -19.197 -7.127)scale(1 -1)"/></g><g filter="url(#e)"><ellipse cx="5.508" cy="30.599" fill="#8900ff" rx="5.508" ry="30.599" transform="rotate(89.814 -25.928 4.177)scale(1 -1)"/></g><g filter="url(#f)"><ellipse cx="5.508" cy="30.599" fill="#8900ff" rx="5.508" ry="30.599" transform="rotate(89.814 -25.738 5.52)scale(1 -1)"/></g><g filter="url(#g)"><ellipse cx="14.072" cy="22.078" fill="#eee6ff" rx="14.072" ry="22.078" transform="rotate(93.35 31.245 55.578)scale(-1 1)"/></g><g filter="url(#h)"><ellipse cx="3.47" cy="21.501" fill="#8900ff" rx="3.47" ry="21.501" transform="rotate(89.009 35.419 55.202)scale(-1 1)"/></g><g filter="url(#i)"><ellipse cx="3.47" cy="21.501" fill="#8900ff" rx="3.47" ry="21.501" transform="rotate(89.009 35.419 55.202)scale(-1 1)"/></g><g filter="url(#j)"><ellipse cx="14.592" cy="9.743" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(39.51 14.592 9.743)"/></g><g filter="url(#k)"><ellipse cx="61.728" cy="-5.321" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 61.728 -5.32)"/></g><g filter="url(#l)"><ellipse cx="55.618" cy="7.104" fill="#00c2ff" rx="5.971" ry="9.665" transform="rotate(37.892 55.618 7.104)"/></g><g filter="url(#m)"><ellipse cx="12.326" cy="39.103" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 12.326 39.103)"/></g><g filter="url(#n)"><ellipse cx="12.326" cy="39.103" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 12.326 39.103)"/></g><g filter="url(#o)"><ellipse cx="49.857" cy="30.678" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 49.857 30.678)"/></g><g filter="url(#p)"><ellipse cx="52.623" cy="33.171" fill="#00c2ff" rx="5.971" ry="15.297" transform="rotate(37.892 52.623 33.17)"/></g></g><path d="M6.919 0c-9.198 13.166-9.252 33.575 0 46.789h6.215c-9.25-13.214-9.196-33.623 0-46.789zm62.424 0h-6.215c9.198 13.166 9.252 33.575 0 46.789h6.215c9.25-13.214 9.196-33.623 0-46.789" class="parenthesis"/><defs><filter id="b" width="60.045" height="41.654" x="-5.564" y="16.92" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="c" width="90.34" height="51.437" x="-40.407" y="-6.762" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="d" width="79.355" height="29.4" x="-35.435" y="2.801" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="e" width="79.579" height="29.4" x="-30.84" y="20.8" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="f" width="79.579" height="29.4" x="-29.307" y="21.949" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="g" width="74.749" height="58.852" x="29.961" y="-17.13" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="h" width="61.377" height="25.362" x="37.754" y="3.055" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="i" width="61.377" height="25.362" x="37.754" y="3.055" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="j" width="56.045" height="63.649" x="-13.43" y="-22.082" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="k" width="54.814" height="64.646" x="34.321" y="-37.644" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="l" width="33.541" height="35.313" x="38.847" y="-10.552" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="m" width="54.814" height="64.646" x="-15.081" y="6.78" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="n" width="54.814" height="64.646" x="-15.081" y="6.78" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="o" width="54.814" height="64.646" x="22.45" y="-1.645" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="p" width="39.409" height="43.623" x="32.919" y="11.36" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter></defs></svg>
+</file>
+
+<file path="frontend/src/assets/vue.svg">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--logos" width="37.07" height="36" preserveAspectRatio="xMidYMid meet" viewBox="0 0 256 198"><path fill="#41B883" d="M204.8 0H256L128 220.8L0 0h97.92L128 51.2L157.44 0h47.36Z"></path><path fill="#41B883" d="m0 0l128 220.8L256 0h-51.2L128 132.48L50.56 0H0Z"></path><path fill="#35495E" d="M50.56 0L128 133.12L204.8 0h-47.36L128 51.2L97.92 0H50.56Z"></path></svg>
+</file>
+
+<file path="frontend/src/components/Navbar.vue">
+<script setup>
+import { RouterLink, useRouter } from 'vue-router'
+import { cerrarSesion, usuario } from '../services/sesion'
+
+const router = useRouter()
+
+function salir() {
+  cerrarSesion()
+  router.push('/login')
+}
+</script>
+
+<template>
+  <header class="navbar">
+    <h2>GameHub IPVG</h2>
+    <nav>
+      <RouterLink to="/">Inicio</RouterLink>
+      <RouterLink to="/torneos">Torneos</RouterLink>
+      <RouterLink to="/equipos">Equipos</RouterLink>
+      <RouterLink to="/partidos">Partidos</RouterLink>
+      <RouterLink to="/ranking">Ranking</RouterLink>
+      <template v-if="usuario">
+        <RouterLink to="/perfil">{{ usuario.alias }}</RouterLink>
+        <button class="secundario" @click="salir">Cerrar sesión</button>
+      </template>
+      <template v-else>
+        <RouterLink to="/login">Iniciar sesión</RouterLink>
+        <RouterLink to="/registro">Registrarse</RouterLink>
+      </template>
+    </nav>
+  </header>
+</template>
+</file>
+
+<file path="frontend/src/router/index.js">
+import { createRouter, createWebHistory } from 'vue-router'
+import { usuario } from '../services/sesion.js'
+import InicioView from '../views/InicioView.vue'
+import NotFoundView from '../views/NotFoundView.vue'
+
+const routes = [
+  { path: '/', name: 'inicio', component: InicioView },
+  { path: '/login', name: 'login', component: () => import('../views/LoginView.vue') },
+  { path: '/registro', name: 'registro', component: () => import('../views/RegistroView.vue') },
+  { path: '/perfil', name: 'perfil', component: () => import('../views/PerfilView.vue'), meta: { requiereAuth: true } },
+  { path: '/equipos', name: 'equipos', component: () => import('../views/EquiposView.vue') },
+  { path: '/equipos/nuevo', name: 'nuevo-equipo', component: () => import('../views/EquipoFormView.vue'), meta: { requiereAuth: true } },
+  { path: '/equipos/:id', name: 'equipo-detalle', component: () => import('../views/EquipoDetalleView.vue') },
+  { path: '/equipos/:id/editar', name: 'editar-equipo', component: () => import('../views/EquipoFormView.vue'), meta: { requiereAuth: true } },
+  { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundView },
+]
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+})
+
+router.beforeEach((to) => {
+  if (to.meta.requiereAuth && !usuario.value) {
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+  if (to.meta.soloAdmin && usuario.value?.rol !== 'admin') {
+    return { name: 'inicio' }
+  }
+  if ((to.name === 'login' || to.name === 'registro') && usuario.value) {
+    return { name: 'inicio' }
+  }
+})
+
+export default router
+</file>
+
+<file path="frontend/src/services/api.js">
+import { cerrarSesion } from './sesion'
+
+const API = 'http://localhost:3000'
+
+export async function peticion(ruta, opciones = {}) {
+  const token = localStorage.getItem('token')
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  let respuesta
+  try {
+    respuesta = await fetch(`${API}${ruta}`, { ...opciones, headers })
+  } catch {
+    throw new Error('No fue posible conectar con la API. Verifique que el backend esté en ejecución.')
+  }
+
+  const datos = await respuesta.json().catch(() => null)
+
+  if (!respuesta.ok) {
+    if (respuesta.status === 401 && token) cerrarSesion()
+    const mensaje = Array.isArray(datos?.message)
+      ? datos.message.join(', ')
+      : datos?.message
+    throw new Error(mensaje || `Error HTTP: ${respuesta.status}`)
+  }
+  return datos
+}
+</file>
+
+<file path="frontend/src/services/authService.js">
+import { peticion } from './api'
+
+export function login(datos) {
+  return peticion('/auth/login', { method: 'POST', body: JSON.stringify(datos) })
+}
+
+export function registrar(datos) {
+  return peticion('/auth/registro', { method: 'POST', body: JSON.stringify(datos) })
+}
+
+export function obtenerPerfil() {
+  return peticion('/auth/perfil')
+}
+
+export function actualizarPerfil(datos) {
+  return peticion('/auth/perfil', { method: 'PATCH', body: JSON.stringify(datos) })
+}
+</file>
+
+<file path="frontend/src/services/sesion.js">
+import { computed, ref } from 'vue'
+
+const guardado = localStorage.getItem('usuario')
+export const usuario = ref(guardado ? JSON.parse(guardado) : null)
+export const esAdmin = computed(() => usuario.value?.rol === 'admin')
+
+export function iniciarSesion(token, datos) {
+  localStorage.setItem('token', token)
+  localStorage.setItem('usuario', JSON.stringify(datos))
+  usuario.value = datos
+}
+
+export function actualizarUsuario(datos) {
+  localStorage.setItem('usuario', JSON.stringify(datos))
+  usuario.value = datos
+}
+
+export function cerrarSesion() {
+  localStorage.removeItem('token')
+  localStorage.removeItem('usuario')
+  usuario.value = null
+}
+</file>
+
+<file path="frontend/src/services/usuariosService.js">
+import { peticion } from './api'
+
+export function obtenerUsuarios() {
+  return peticion('/usuarios')
+}
+</file>
+
+<file path="frontend/src/views/InicioView.vue">
+<template>
+  <section class="hero">
+    <div>
+      <p class="etiqueta">Torneos internos · eSports</p>
+      <h1>GameHub IPVG</h1>
+      <p>
+        Inscribe a tu equipo, revisa el calendario de partidos y sigue el
+        ranking de los torneos de videojuegos del Instituto Profesional Virginio Gómez.
+      </p>
+      <RouterLink to="/torneos" class="boton">Ver torneos</RouterLink>
+    </div>
+  </section>
+</template>
+</file>
+
+<file path="frontend/src/views/LoginView.vue">
+<script setup>
+import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { login } from '../services/authService'
+import { iniciarSesion } from '../services/sesion'
+
+const router = useRouter()
+const route = useRoute()
+const correo = ref('')
+const password = ref('')
+const error = ref('')
+const cargando = ref(false)
+
+async function ingresar() {
+  error.value = ''
+  if (!correo.value || !password.value) {
+    error.value = 'Debe ingresar correo y contraseña.'
+    return
+  }
+  try {
+    cargando.value = true
+    const respuesta = await login({ correo: correo.value, password: password.value })
+    iniciarSesion(respuesta.access_token, respuesta.usuario)
+    router.push(route.query.redirect || '/torneos')
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    cargando.value = false
+  }
+}
+</script>
+
+<template>
+  <section class="pagina">
+    <h1>Iniciar sesión</h1>
+    <form class="formulario" @submit.prevent="ingresar">
+      <label>Correo electrónico</label>
+      <input v-model="correo" type="email" />
+      <label>Contraseña</label>
+      <input v-model="password" type="password" />
+      <p v-if="error" class="error">{{ error }}</p>
+      <button :disabled="cargando">{{ cargando ? 'Ingresando...' : 'Ingresar' }}</button>
+    </form>
+    <p>¿No tienes cuenta? <RouterLink to="/registro">Regístrate</RouterLink></p>
+  </section>
+</template>
+</file>
+
+<file path="frontend/src/views/NotFoundView.vue">
+<template>
+  <section class="pagina">
+    <h1>404</h1>
+    <h2>Página no encontrada</h2>
+    <p>La dirección solicitada no existe.</p>
+    <RouterLink to="/">Regresar al inicio</RouterLink>
+  </section>
+</template>
+</file>
+
+<file path="frontend/src/views/PerfilView.vue">
+<script setup>
+import { onMounted, ref } from 'vue'
+import { actualizarPerfil, obtenerPerfil } from '../services/authService'
+import { actualizarUsuario } from '../services/sesion'
+
+const perfil = ref({ nombre: '', alias: '', correo: '', rol: '' })
+const cargando = ref(true)
+const guardando = ref(false)
+const error = ref('')
+const mensaje = ref('')
+
+async function cargar() {
+  try {
+    cargando.value = true
+    perfil.value = await obtenerPerfil()
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    cargando.value = false
+  }
+}
+
+async function guardar() {
+  mensaje.value = ''
+  error.value = ''
+  if (perfil.value.nombre.length < 3 || perfil.value.alias.length < 3) {
+    error.value = 'Nombre y alias deben tener al menos 3 caracteres.'
+    return
+  }
+  try {
+    guardando.value = true
+    const actualizado = await actualizarPerfil({ nombre: perfil.value.nombre, alias: perfil.value.alias })
+    actualizarUsuario(actualizado)
+    mensaje.value = 'Perfil actualizado correctamente.'
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    guardando.value = false
+  }
+}
+
+onMounted(cargar)
+</script>
+
+<template>
+  <section class="pagina">
+    <h1>Mi perfil</h1>
+    <p v-if="cargando">Cargando perfil...</p>
+    <form v-else class="formulario" @submit.prevent="guardar">
+      <p>Correo: <strong>{{ perfil.correo }}</strong> · Rol: <strong>{{ perfil.rol }}</strong></p>
+      <label>Nombre</label>
+      <input v-model="perfil.nombre" />
+      <label>Alias</label>
+      <input v-model="perfil.alias" />
+      <p v-if="error" class="error">{{ error }}</p>
+      <p v-if="mensaje" class="correcto">{{ mensaje }}</p>
+      <button :disabled="guardando">{{ guardando ? 'Guardando...' : 'Guardar cambios' }}</button>
+    </form>
+  </section>
+</template>
+</file>
+
+<file path="frontend/src/views/RegistroView.vue">
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { registrar } from '../services/authService'
+
+const router = useRouter()
+const form = ref({ nombre: '', alias: '', correo: '', password: '' })
+const error = ref('')
+const mensaje = ref('')
+const guardando = ref(false)
+
+function validar() {
+  if (form.value.nombre.length < 3) return 'El nombre debe tener al menos 3 caracteres.'
+  if (form.value.alias.length < 3) return 'El alias debe tener al menos 3 caracteres.'
+  if (!form.value.correo.includes('@')) return 'Ingrese un correo válido.'
+  if (form.value.password.length < 6) return 'La contraseña debe tener al menos 6 caracteres.'
+  return ''
+}
+
+async function guardar() {
+  mensaje.value = ''
+  error.value = validar()
+  if (error.value) return
+  try {
+    guardando.value = true
+    await registrar(form.value)
+    mensaje.value = 'Cuenta creada correctamente. Ahora puedes iniciar sesión.'
+    setTimeout(() => router.push('/login'), 1200)
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    guardando.value = false
+  }
+}
+</script>
+
+<template>
+  <section class="pagina">
+    <h1>Crear cuenta</h1>
+    <form class="formulario" @submit.prevent="guardar">
+      <label>Nombre</label>
+      <input v-model="form.nombre" />
+      <label>Alias (nombre de jugador)</label>
+      <input v-model="form.alias" />
+      <label>Correo electrónico</label>
+      <input v-model="form.correo" type="email" />
+      <label>Contraseña</label>
+      <input v-model="form.password" type="password" />
+      <p v-if="error" class="error">{{ error }}</p>
+      <p v-if="mensaje" class="correcto">{{ mensaje }}</p>
+      <button :disabled="guardando">{{ guardando ? 'Guardando...' : 'Registrarme' }}</button>
+    </form>
+  </section>
+</template>
+</file>
+
+<file path="frontend/src/App.vue">
+<script setup>
+import { RouterView } from 'vue-router'
+import Navbar from './components/Navbar.vue'
+</script>
+
+<template>
+  <Navbar />
+  <main>
+    <RouterView />
+  </main>
+  <footer>
+    <p>GameHub IPVG · Lenguaje de Programación Web II · 2026</p>
+  </footer>
+</template>
+</file>
+
+<file path="frontend/src/main.js">
+import { createApp } from 'vue'
+import App from './App.vue'
+import router from './router'
+import './style.css'
+
+createApp(App)
+  .use(router)
+  .mount('#app')
+</file>
+
+<file path="frontend/src/style.css">
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #1f2937;
+  background: #f3f4f6;
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+button, input, select, textarea { font: inherit; }
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  background: #4c1d95;
+  color: white;
+}
+button:disabled { opacity: .6; cursor: not-allowed; }
+button.secundario { background: #e5e7eb; color: #1f2937; }
+button.peligro { background: #b42318; }
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 7%;
+  background: #1e1b4b;
+  color: white;
+}
+.navbar nav { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.navbar a { color: white; text-decoration: none; }
+.navbar a.router-link-active { font-weight: bold; text-decoration: underline; }
+
+.pagina { width: min(1100px, 92%); margin: 32px auto; }
+.hero { min-height: 50vh; display: grid; place-items: center; text-align: center; padding: 40px 8%; }
+.encabezado { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.filtros { display: flex; gap: 12px; margin: 20px 0; flex-wrap: wrap; }
+.filtros input, .filtros select { padding: 8px 10px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+.tarjeta, .panel {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .1);
+}
+.panel { margin-bottom: 24px; }
+.etiqueta {
+  display: inline-block;
+  background: #ede9fe;
+  color: #4c1d95;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: .85rem;
+}
+.acciones { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+.boton { background: #4c1d95; color: white; padding: 8px 14px; border-radius: 8px; text-decoration: none; }
+.formulario { display: grid; gap: 10px; max-width: 650px; }
+.formulario input, .formulario select { padding: 10px; }
+.checks { display: grid; gap: 6px; }
+.tabla { width: 100%; border-collapse: collapse; background: white; }
+.tabla th, .tabla td { padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: left; }
+.error { color: #b42318; }
+.correcto { color: #18794e; }
+footer { text-align: center; padding: 20px; color: #6b7280; }
+
+@media (max-width: 700px) {
+  .navbar { flex-direction: column; gap: 12px; }
+}
+</file>
+
+<file path="frontend/.gitignore">
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+</file>
+
+<file path="frontend/index.html">
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>frontend</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
+</file>
+
+<file path="frontend/package.json">
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.5.44",
+    "vue-router": "^5.5.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.10",
+    "vite": "^8.3.6"
+  }
+}
+</file>
+
+<file path="frontend/README.md">
+# Vue 3 + Vite
+
+This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+
+Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+</file>
+
+<file path="frontend/vite.config.js">
+import vue from '@vitejs/plugin-vue'
+import { defineConfig } from 'vite'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [vue()],
+})
+</file>
+
+<file path="backend/src/main.ts">
+import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  app.enableCors({
+    origin: 'http://localhost:5173',
+  });
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+    }),
+  );
+
+  const config = new DocumentBuilder()
+    .setTitle('GameHub IPVG API')
+    .setDescription('API de torneos de videojuegos y eSports')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, document);
+
+  await app.listen(process.env.PORT || 3000);
+}
+bootstrap();
+</file>
+
+<file path="backend/.gitignore">
+node_modules
+dist
+.env
+*.tsbuildinfo
+</file>
+
+<file path="backend/nest-cli.json">
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "plugins": ["@nestjs/swagger"]
+  }
+}
+</file>
+
+<file path="backend/package.json">
+{
+  "name": "backend",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "nest build",
+    "deploy": "nest deploy",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:debug": "nest start --debug --watch",
+    "start:prod": "node dist/main",
+    "lint": "oxlint src/ test/",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test:e2e": "jest --config ./test/jest-e2e.json"
+  },
+  "dependencies": {
+    "@nestjs/common": "^12.0.1",
+    "@nestjs/config": "^12.1.1",
+    "@nestjs/core": "^12.0.1",
+    "@nestjs/jwt": "^12.0.5",
+    "@nestjs/platform-express": "^12.0.1",
+    "@nestjs/swagger": "^12.1.2",
+    "@nestjs/typeorm": "^12.0.3",
+    "bcryptjs": "^3.0.3",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "mysql2": "^3.24.6",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "typeorm": "^1.1.3"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^12.0.0",
+    "@nestjs/mau": "^0.2.6",
+    "@nestjs/schematics": "^12.0.0",
+    "@nestjs/testing": "^12.0.1",
+    "@types/express": "^5.0.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.0",
+    "@types/supertest": "^7.0.0",
+    "jest": "^30.0.0",
+    "oxlint": "^1.58.0",
+    "prettier": "^3.4.2",
+    "source-map-support": "^0.5.21",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.2.5",
+    "ts-loader": "^9.5.2",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^6.0.2"
+  }
+}
+</file>
+
+<file path="backend/src/app.module.ts">
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { UsuariosModule } from './usuarios/usuarios.module';
+import { AuthModule } from './auth/auth.module';
+import { TorneosModule } from './torneos/torneos.module';
+import { EquiposModule } from './equipos/equipos.module';
+import { InscripcionesModule } from './inscripciones/inscripciones.module';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    TypeOrmModule.forRoot({
+      type: 'mysql',
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT || 3306),
+      username: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      autoLoadEntities: true,
+      synchronize: true,
+    }),
+    UsuariosModule,
+    AuthModule,
+    TorneosModule,
+    EquiposModule,
+    InscripcionesModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
+</file>
+
+</files>
