@@ -7,6 +7,9 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
+import type { Relation } from 'typeorm';
+
+import { jest } from '@jest/globals';
 import { Partido } from '../../partidos/entities/partido.entity';
 import { Equipo } from '../../equipos/entities/equipo.entity';
 import { Usuario } from '../../usuarios/entities/usuario.entity';
@@ -23,7 +26,7 @@ export class Resultado {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'partidoId' })
-  partido: Partido;
+  partido: Relation<Partido>;
 
   @Column('int')
   marcadorLocal: number;

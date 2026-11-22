@@ -7,6 +7,9 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
+import type { Relation } from 'typeorm';
+
+
 import { Torneo } from '../../torneos/entities/torneo.entity';
 import { Equipo } from '../../equipos/entities/equipo.entity';
 import { Resultado } from '../../resultados/entities/resultado.entity';
@@ -47,5 +50,5 @@ export class Partido {
   estado: string;
 
   @OneToOne(() => Resultado, (resultado) => resultado.partido)
-  resultado: Resultado;
+  resultado: Relation<Resultado>;
 }
