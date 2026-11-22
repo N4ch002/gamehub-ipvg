@@ -30,7 +30,7 @@ export class Partido {
   equipoLocalId: number;
 
   @ManyToOne(() => Equipo)
-  @JoinColumn({ name: 'equipoLocalId' })
+  @ManyToOne(() => Equipo, { onDelete: 'CASCADE' })
   equipoLocal: Equipo;
 
   @Column('int')

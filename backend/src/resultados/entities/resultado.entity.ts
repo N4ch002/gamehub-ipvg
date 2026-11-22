@@ -8,8 +8,6 @@ import {
 } from 'typeorm';
 
 import type { Relation } from 'typeorm';
-
-import { jest } from '@jest/globals';
 import { Partido } from '../../partidos/entities/partido.entity';
 import { Equipo } from '../../equipos/entities/equipo.entity';
 import { Usuario } from '../../usuarios/entities/usuario.entity';
@@ -37,7 +35,7 @@ export class Resultado {
   @Column('int', { nullable: true })
   ganadorId: number | null;
 
-  @ManyToOne(() => Equipo, { nullable: true })
+  @ManyToOne(() => Equipo, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'ganadorId' })
   ganador: Equipo | null;
 
