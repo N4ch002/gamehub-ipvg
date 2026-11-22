@@ -8,6 +8,8 @@ import { AuthModule } from './auth/auth.module';
 import { TorneosModule } from './torneos/torneos.module';
 import { EquiposModule } from './equipos/equipos.module';
 import { InscripcionesModule } from './inscripciones/inscripciones.module';
+import { PartidosModule } from './partidos/partidos.module';
+import { ResultadosModule } from './resultados/resultados.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { InscripcionesModule } from './inscripciones/inscripciones.module';
     TorneosModule,
     EquiposModule,
     InscripcionesModule,
+    PartidosModule,
+    ResultadosModule,
   ],
   controllers: [AppController],
   providers: [AppService],
