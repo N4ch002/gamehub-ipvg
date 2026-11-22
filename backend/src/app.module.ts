@@ -1,13 +1,19 @@
+
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { AuthModule } from './auth/auth.module';
 import { TorneosModule } from './torneos/torneos.module';
 import { EquiposModule } from './equipos/equipos.module';
 import { InscripcionesModule } from './inscripciones/inscripciones.module';
+import { PartidosModule } from './partidos/partidos.module';
+import { ResultadosModule } from './resultados/resultados.module';
+import { RankingModule } from './ranking/ranking.module';
 
 @Module({
   imports: [
@@ -29,6 +35,9 @@ import { InscripcionesModule } from './inscripciones/inscripciones.module';
     TorneosModule,
     EquiposModule,
     InscripcionesModule,
+    PartidosModule,
+    ResultadosModule,
+    RankingModule,
   ],
   controllers: [AppController],
   providers: [AppService],
