@@ -1,6 +1,15 @@
-﻿USE gamehub_colaboracion;
+﻿USE gamehub_db;
 
-SET @pass = '$2b$10$Dd7E6qu6Fzur7GAtsde3SOj0K9/jKF/0P.qeryJ0cnxeKz81xV2jm';
+SET @pass = '$2b$10$DhN5wuo5bI5SVhtIRjxVXe4SkaWtdPxgvkZTxOVJ1jeVFK7lDE7cO';
+SET FOREIGN_KEY_CHECKS = 0;
+TRUNCATE TABLE resultados;
+TRUNCATE TABLE partidos;
+TRUNCATE TABLE inscripciones;
+TRUNCATE TABLE equipo_integrantes;
+TRUNCATE TABLE equipos;
+TRUNCATE TABLE torneos;
+TRUNCATE TABLE usuarios;
+SET FOREIGN_KEY_CHECKS = 1;
 
 INSERT INTO usuarios (id, nombre, alias, correo, password, rol, activo) VALUES
 (1, 'Administrador GameHub', 'admin', 'admin@ipvg.cl', @pass, 'admin', 1),
