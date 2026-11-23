@@ -29,14 +29,14 @@ export class Partido {
   @Column('int')
   equipoLocalId: number;
 
-  @ManyToOne(() => Equipo)
   @ManyToOne(() => Equipo, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'equipoLocalId' })
   equipoLocal: Equipo;
 
   @Column('int')
   equipoVisitanteId: number;
 
-  @ManyToOne(() => Equipo)
+  @ManyToOne(() => Equipo, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'equipoVisitanteId' })
   equipoVisitante: Equipo;
 

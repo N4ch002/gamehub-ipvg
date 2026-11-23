@@ -154,7 +154,7 @@ cd gamehub-ipvg-colaboracion
 Ingresar a MySQL y ejecutar:
 
 ```sql
-CREATE DATABASE gamehub_colaboracion;
+CREATE DATABASE gamehub_db;
 ```
 
 La base de datos debe estar vacía antes de iniciar la configuración.
@@ -174,7 +174,7 @@ DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=
-DB_NAME=gamehub_colaboracion
+DB_NAME=gamehub_db
 PORT=3000
 JWT_SECRET=colocar_una_clave_secreta
 ```
@@ -260,7 +260,7 @@ Estas credenciales corresponden a los datos de prueba incluidos en el seed. Se r
 El registro público crea usuarios con rol `estudiante`. Para habilitar un usuario como administrador, primero debe registrarse normalmente y después ejecutar, desde MySQL, una actualización como la siguiente:
 
 ```sql
-USE gamehub_colaboracion;
+USE gamehub_db;
 
 UPDATE usuarios
 SET rol = 'admin'
@@ -466,7 +466,7 @@ Los casos marcados como aprobados corresponden a las verificaciones funcionales 
 Para revisar los datos cargados por el seed, se utilizaron consultas SQL como las siguientes:
 
 ```sql
-USE gamehub_colaboracion;
+USE gamehub_db;
 
 SHOW TABLES;
 
@@ -550,7 +550,7 @@ Completar esta sección con las fechas reales de trabajo y los principales cambi
 
 Durante el desarrollo se abordaron situaciones como las siguientes:
 
-1. **Configuración de la base de datos:** se revisaron los nombres de las bases de datos configurados en los archivos de ejemplo y en el seed para mantener la conexión con `gamehub_colaboracion`.
+1. **Configuración de la base de datos:** se revisaron los nombres de las bases de datos configurados en los archivos de ejemplo y en el seed para mantener la conexión con `gamehub_db`.
 2. **Validación de solicitudes:** se corrigieron solicitudes que enviaban propiedades no permitidas por los DTO, como `id` o `color`.
 3. **Autenticación:** se utilizó JWT para proteger las rutas que requieren un usuario autenticado.
 4. **Permisos:** se diferenciaron las operaciones disponibles para estudiantes y administradores.
