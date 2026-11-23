@@ -1,4 +1,4 @@
-﻿USE gamehub_db;
+USE gamehub_colaboracion;
 
 SET @pass = '$2b$10$DhN5wuo5bI5SVhtIRjxVXe4SkaWtdPxgvkZTxOVJ1jeVFK7lDE7cO';
 SET FOREIGN_KEY_CHECKS = 0;
